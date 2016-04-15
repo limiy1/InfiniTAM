@@ -23,13 +23,13 @@ namespace ITMLib
 			/** A list of "visible entries", that are currently
 			being processed by the tracker.
 			*/
-			ORUtils::MemoryBlock<int> *visibleEntryIDs;
+			ORUtils::MemoryBlock<int> *visibleEntryIDs;      //A vector containing all visible entry's IDs 
 
 			/** A list of "visible entries", that are
 			currently being processed by integration
 			and tracker.
 			*/
-			ORUtils::MemoryBlock<uchar> *entriesVisibleType;
+			ORUtils::MemoryBlock<uchar> *entriesVisibleType;    //A value to each hash table entry, totally BUCKET_NUM+EXCESS_LIST_SZ
             
 		public:
 			/** Number of entries in the live list. */

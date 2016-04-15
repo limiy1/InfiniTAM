@@ -6,6 +6,7 @@
 #include "ITMPixelUtils.h"
 #include "ITMRepresentationAccess.h"
 
+//Use depth image information to update voxels in block
 template<class TVoxel>
 _CPU_AND_GPU_CODE_ inline float computeUpdatedVoxelDepthInfo(DEVICEPTR(TVoxel) &voxel, const THREADPTR(Vector4f) & pt_model, const CONSTPTR(Matrix4f) & M_d,
 	const CONSTPTR(Vector4f) & projParams_d, float mu, int maxW, const CONSTPTR(float) *depth, const CONSTPTR(Vector2i) & imgSize)
@@ -31,7 +32,7 @@ _CPU_AND_GPU_CODE_ inline float computeUpdatedVoxelDepthInfo(DEVICEPTR(TVoxel) &
 	if (eta < -mu) return eta;
 
 	// compute updated SDF value and reliability
-	oldF = TVoxel::SDF_valueToFloat(voxel.sdf); oldW = voxel.w_depth;
+	oldF = TVoxel::SDF_valueToFloat(voxel.sdf); oldW = voxel.w_depth;   //oldW: number of observations that are fusioned into current voxel
 
 	newF = MIN(1.0f, eta / mu);
 	newW = 1;
@@ -115,6 +116,7 @@ struct ComputeUpdatedVoxelInfo<true, TVoxel> {
 	}
 };
 
+//Find all voxel along the pixel's direction, and mark those intersecting with (depth_measure +/- mu)
 _CPU_AND_GPU_CODE_ inline void buildHashAllocAndVisibleTypePP(DEVICEPTR(uchar) *entriesAllocType, DEVICEPTR(uchar) *entriesVisibleType, int x, int y,
 	DEVICEPTR(Vector4s) *blockCoords, const CONSTPTR(float) *depth, Matrix4f invM_d, Vector4f projParams_d, float mu, Vector2i imgSize,
 	float oneOverVoxelSize, const CONSTPTR(ITMHashEntry) *hashTable, float viewFrustum_min, float viewFrustum_max)
@@ -125,6 +127,7 @@ _CPU_AND_GPU_CODE_ inline void buildHashAllocAndVisibleTypePP(DEVICEPTR(uchar) *
 	depth_measure = depth[x + y * imgSize.x];
 	if (depth_measure <= 0 || (depth_measure - mu) < 0 || (depth_measure - mu) < viewFrustum_min || (depth_measure + mu) > viewFrustum_max) return;
 
+	//Create a vector between camera center and the vortex at (x,y,depth)
 	pt_camera_f.z = depth_measure;
 	pt_camera_f.x = pt_camera_f.z * ((float(x) - projParams_d.z) * projParams_d.x);
 	pt_camera_f.y = pt_camera_f.z * ((float(y) - projParams_d.w) * projParams_d.y);
@@ -136,11 +139,11 @@ _CPU_AND_GPU_CODE_ inline void buildHashAllocAndVisibleTypePP(DEVICEPTR(uchar) *
 	tmp.y = pt_camera_f.y * (1.0f - mu / norm);
 	tmp.z = pt_camera_f.z * (1.0f - mu / norm);
 	tmp.w = 1.0f;
-	point = TO_VECTOR3(invM_d * tmp) * oneOverVoxelSize;
+	point = TO_VECTOR3(invM_d * tmp) * oneOverVoxelSize;   //nearest voxel to be considered
 	tmp.x = pt_camera_f.x * (1.0f + mu / norm);
 	tmp.y = pt_camera_f.y * (1.0f + mu / norm);
 	tmp.z = pt_camera_f.z * (1.0f + mu / norm);
-	point_e = TO_VECTOR3(invM_d * tmp) * oneOverVoxelSize;
+	point_e = TO_VECTOR3(invM_d * tmp) * oneOverVoxelSize;   //farthest voxel to be considered
 
 	direction = point_e - point;
 	norm = sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
@@ -156,14 +159,14 @@ _CPU_AND_GPU_CODE_ inline void buildHashAllocAndVisibleTypePP(DEVICEPTR(uchar) *
 		//compute index in hash table
 		hashIdx = hashIndex(blockPos);
 
-		//check if hash table contains entry
+		//check if hash table contains entry (block)
 		bool isFound = false;
 
 		ITMHashEntry hashEntry = hashTable[hashIdx];
 
 		if (IS_EQUAL3(hashEntry.pos, blockPos) && hashEntry.ptr >= -1)
 		{
-			//entry has been streamed out but is visible or in memory and visible
+			//Decide if the entry has been streamed/swapped out (in CPU) or in memory (in GPU)
 			entriesVisibleType[hashIdx] = (hashEntry.ptr == -1) ? 2 : 1;
 
 			isFound = true;
@@ -172,9 +175,9 @@ _CPU_AND_GPU_CODE_ inline void buildHashAllocAndVisibleTypePP(DEVICEPTR(uchar) *
 		if (!isFound)
 		{
 			bool isExcess = false;
-			if (hashEntry.ptr >= -1) //seach excess list only if there is no room in ordered part
+			if (hashEntry.ptr >= -1) //seach excess list only if there is no room in ordered part: hashEntry contains an allocated block, but the position is different
 			{
-				while (hashEntry.offset >= 1)
+				while (hashEntry.offset >= 1)  //Find all the "children" in the excess list
 				{
 					hashIdx = SDF_BUCKET_NUM + hashEntry.offset - 1;
 					hashEntry = hashTable[hashIdx];
@@ -197,11 +200,11 @@ _CPU_AND_GPU_CODE_ inline void buildHashAllocAndVisibleTypePP(DEVICEPTR(uchar) *
 				entriesAllocType[hashIdx] = isExcess ? 2 : 1; //needs allocation 
 				if (!isExcess) entriesVisibleType[hashIdx] = 1; //new entry is visible
 
-				blockCoords[hashIdx] = Vector4s(blockPos.x, blockPos.y, blockPos.z, 1);
+				blockCoords[hashIdx] = Vector4s(blockPos.x, blockPos.y, blockPos.z, 1);  //new block to be created
 			}
 		}
 
-		point += direction;
+		point += direction;    //step forward
 	}
 }
 

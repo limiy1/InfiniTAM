@@ -93,6 +93,7 @@ void ITMSceneReconstructionEngine_CPU<TVoxel, ITMVoxelBlockHash>::IntegrateIntoS
 
 		TVoxel *localVoxelBlock = &(localVBA[currentHashEntry.ptr * (SDF_BLOCK_SIZE3)]);
 
+		//Update the block
 		for (int z = 0; z < SDF_BLOCK_SIZE; z++) for (int y = 0; y < SDF_BLOCK_SIZE; y++) for (int x = 0; x < SDF_BLOCK_SIZE; x++)
 		{
 			Vector4f pt_model; int locId;
@@ -107,6 +108,7 @@ void ITMSceneReconstructionEngine_CPU<TVoxel, ITMVoxelBlockHash>::IntegrateIntoS
 			pt_model.z = (float)(globalPos.z + z) * voxelSize;
 			pt_model.w = 1.0f;
 
+			//Update each voxel
 			ComputeUpdatedVoxelInfo<TVoxel::hasColorInformation,TVoxel>::compute(localVoxelBlock[locId], pt_model, M_d, 
 				projParams_d, M_rgb, projParams_rgb, mu, maxW, depth, depthImgSize, rgb, rgbImgSize);
 		}
@@ -143,7 +145,7 @@ void ITMSceneReconstructionEngine_CPU<TVoxel, ITMVoxelBlockHash>::AllocateSceneF
 	uchar *entriesVisibleType = renderState_vh->GetEntriesVisibleType();
 	uchar *entriesAllocType = this->entriesAllocType->GetData(MEMORYDEVICE_CPU);
 	Vector4s *blockCoords = this->blockCoords->GetData(MEMORYDEVICE_CPU);
-	int noTotalEntries = scene->index.noTotalEntries;
+	int noTotalEntries = scene->index.noTotalEntries;   //Total hash size
 
 	bool useSwapping = scene->useSwapping;
 
@@ -186,6 +188,7 @@ void ITMSceneReconstructionEngine_CPU<TVoxel, ITMVoxelBlockHash>::AllocateSceneF
 			case 1: //needs allocation, fits in the ordered list
 				vbaIdx = lastFreeVoxelBlockId; lastFreeVoxelBlockId--;
 
+				//TODO: bug ? no mark of visibleType ?
 				if (vbaIdx >= 0) //there is room in the voxel block array
 				{
 					Vector4s pt_block_all = blockCoords[targetIdx];
@@ -232,6 +235,7 @@ void ITMSceneReconstructionEngine_CPU<TVoxel, ITMVoxelBlockHash>::AllocateSceneF
 		unsigned char hashVisibleType = entriesVisibleType[targetIdx];
 		const ITMHashEntry &hashEntry = hashTable[targetIdx];
 		
+		//Check the visibility of blocks which are visible in last frame
 		if (hashVisibleType == 3)
 		{
 			bool isVisibleEnlarged, isVisible;

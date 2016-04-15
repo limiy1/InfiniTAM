@@ -50,7 +50,7 @@ void ITMDenseMapper<TVoxel,TIndex>::ResetScene(ITMScene<TVoxel,TIndex> *scene)
 template<class TVoxel, class TIndex>
 void ITMDenseMapper<TVoxel,TIndex>::ProcessFrame(const ITMView *view, const ITMTrackingState *trackingState, ITMScene<TVoxel,TIndex> *scene, ITMRenderState *renderState)
 {
-	// allocation
+	// allocation (as well as visible list update ?)
 	sceneRecoEngine->AllocateSceneFromDepth(scene, view, trackingState, renderState);
 
 	// integration
