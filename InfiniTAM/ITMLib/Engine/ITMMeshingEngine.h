@@ -20,6 +20,7 @@ namespace ITMLib
 		{
 		public:
 			virtual void MeshScene(ITMMesh *mesh, const ITMScene<TVoxel,TIndex> *scene) = 0;
+			virtual void VertexScene(ITMMesh *mesh, const ITMScene<TVoxel, TIndex> *scene) = 0;
 
 			ITMMeshingEngine(void) { }
 			virtual ~ITMMeshingEngine(void) { }

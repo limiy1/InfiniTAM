@@ -103,9 +103,13 @@ ITMMesh* ITMMainEngine::UpdateMesh(void)
 void ITMMainEngine::SaveSceneToMesh(const char *objFileName)
 {
 	if (mesh == NULL) return;
+	//Create mesh
 	meshingEngine->MeshScene(mesh, scene);
-//	mesh->WriteSTL(objFileName);
-	mesh->WriteOBJ(objFileName);
+	mesh->WriteSTL(objFileName);
+
+	//create vertex
+//	meshingEngine->VertexScene(mesh, scene);
+//	mesh->WriteXYZ(objFileName);
 }
 
 void ITMMainEngine::ProcessFrame(ITMUChar4Image *rgbImage, ITMShortImage *rawDepthImage, ITMIMUMeasurement *imuMeasurement)

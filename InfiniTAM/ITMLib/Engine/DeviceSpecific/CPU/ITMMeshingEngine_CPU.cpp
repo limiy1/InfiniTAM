@@ -41,67 +41,67 @@ void ITMMeshingEngine_CPU<TVoxel, ITMVoxelBlockHash>::VertexScene(ITMMesh *mesh,
 			Vector3f points[8]; float sdfVals[8];
 			int edgePattern = getEdgePattern(points, sdfVals, globalPos, Vector3i(x, y, z), localVBA, hashTable);
 
-			if (edgePattern < 0) continue;
+			if (edgePattern <= 0) continue;
 
 			if (edgePattern & 1)
 			{
-				vertices[noVertice] = sdfInterp(points[0], points[1], sdfVals[0], sdfVals[1]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[0], points[1], sdfVals[0], sdfVals[1]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 2)
 			{
-				vertices[noVertice] = sdfInterp(points[1], points[2], sdfVals[1], sdfVals[2]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[1], points[2], sdfVals[1], sdfVals[2]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 4)
 			{
-				vertices[noVertice] = sdfInterp(points[2], points[3], sdfVals[2], sdfVals[3]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[2], points[3], sdfVals[2], sdfVals[3]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 8)
 			{
-				vertices[noVertice] = sdfInterp(points[3], points[0], sdfVals[3], sdfVals[0]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[3], points[0], sdfVals[3], sdfVals[0]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 16)
 			{
-				vertices[noVertice] = sdfInterp(points[4], points[5], sdfVals[4], sdfVals[5]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[4], points[5], sdfVals[4], sdfVals[5]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 32)
 			{
-				vertices[noVertice] = sdfInterp(points[5], points[6], sdfVals[5], sdfVals[6]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[5], points[6], sdfVals[5], sdfVals[6]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 64)
 			{
-				vertices[noVertice] = sdfInterp(points[6], points[7], sdfVals[6], sdfVals[7]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[6], points[7], sdfVals[6], sdfVals[7]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 128)
 			{
-				vertices[noVertice] = sdfInterp(points[7], points[4], sdfVals[7], sdfVals[4]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[7], points[4], sdfVals[7], sdfVals[4]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 256)
 			{
-				vertices[noVertice] = sdfInterp(points[0], points[4], sdfVals[0], sdfVals[4]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[0], points[4], sdfVals[0], sdfVals[4]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 512)
 			{
-				vertices[noVertice] = sdfInterp(points[1], points[5], sdfVals[1], sdfVals[5]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[1], points[5], sdfVals[1], sdfVals[5]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 1024)
 			{
-				vertices[noVertice] = sdfInterp(points[2], points[6], sdfVals[2], sdfVals[6]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[2], points[6], sdfVals[2], sdfVals[6]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 			if (edgePattern & 2048)
 			{
-				vertices[noVertice] = sdfInterp(points[3], points[7], sdfVals[3], sdfVals[7]);
-				++noVertice;
+				vertices[noVertice] = sdfInterp(points[3], points[7], sdfVals[3], sdfVals[7]) * factor;
+				if (noVertice < noMaxVertices - 1) ++noVertice;
 			}
 		}
 	}

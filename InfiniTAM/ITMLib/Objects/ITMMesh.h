@@ -54,9 +54,9 @@ namespace ITMLib
 				FILE *f = fopen(fileName, "w+");
 				if (f != NULL)
 				{
-					for (uint i = 0; i < noTotalTriangles; i++)
+					for (uint i = 0; i < noTotalVertices; i++)
 					{
-						fprintf(f, "v %f %f %f\n", verticesArray[i][0], verticesArray[i][1], verticesArray[i][2]);
+						fprintf(f, "%f %f %f\n", verticesArray[i][0], verticesArray[i][1], verticesArray[i][2]);
 					}
 					fclose(f);
 				}
@@ -64,6 +64,7 @@ namespace ITMLib
 				if (shoulDelete) delete cpu_vertices;
 			}
 
+			//Cannot be loaded with mashlab
 			void WriteOBJ(const char *fileName)
 			{
 				ORUtils::MemoryBlock<Triangle> *cpu_triangles; bool shoulDelete = false;
