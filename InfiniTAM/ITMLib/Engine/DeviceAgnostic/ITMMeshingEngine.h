@@ -230,3 +230,17 @@ _CPU_AND_GPU_CODE_ inline int buildVertList(THREADPTR(Vector3f) *vertList, Vecto
 
 	return cubeIndex;
 }
+
+template<class TVoxel>
+_CPU_AND_GPU_CODE_ inline int getEdgePattern(THREADPTR(Vector3f) *points, THREADPTR(float) *sdfVals, Vector3i globalPos, Vector3i localPos, const CONSTPTR(TVoxel) *localVBA, const CONSTPTR(ITMHashEntry) *hashTable)
+{
+	if (!findPointNeighbors(points, sdfVals, globalPos + localPos, localVBA, hashTable)) return -1;
+
+	int cubeIndex = 0;
+	if (sdfVals[0] < 0) cubeIndex |= 1; if (sdfVals[1] < 0) cubeIndex |= 2;
+	if (sdfVals[2] < 0) cubeIndex |= 4; if (sdfVals[3] < 0) cubeIndex |= 8;
+	if (sdfVals[4] < 0) cubeIndex |= 16; if (sdfVals[5] < 0) cubeIndex |= 32;
+	if (sdfVals[6] < 0) cubeIndex |= 64; if (sdfVals[7] < 0) cubeIndex |= 128;
+
+	return edgeTable[cubeIndex];
+}

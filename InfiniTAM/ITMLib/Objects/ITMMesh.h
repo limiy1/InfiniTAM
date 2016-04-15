@@ -20,8 +20,11 @@ namespace ITMLib
 
 			uint noTotalTriangles;
 			static const uint noMaxTriangles = SDF_LOCAL_BLOCK_NUM * 32;
-
 			ORUtils::MemoryBlock<Triangle> *triangles;
+
+			uint noTotalVertices;
+			static const uint noMaxVertices = SDF_LOCAL_BLOCK_NUM * 12;
+			ORUtils::MemoryBlock<Vector3f> *vertices;
 
 			explicit ITMMesh(MemoryDeviceType memoryType)
 			{
@@ -29,6 +32,36 @@ namespace ITMLib
 				this->noTotalTriangles = 0;
 
 				triangles = new ORUtils::MemoryBlock<Triangle>(noMaxTriangles, memoryType);
+
+				this->noTotalVertices = 0;
+				vertices = new ORUtils::MemoryBlock<Vector3f>(noMaxVertices, memoryType);
+			}
+
+			//Write vertices information
+			void WriteXYZ(const char *fileName)
+			{
+				ORUtils::MemoryBlock<Vector3f> *cpu_vertices; bool shoulDelete = false;
+				if (memoryType == MEMORYDEVICE_CUDA)
+				{
+					cpu_vertices = new ORUtils::MemoryBlock<Vector3f>(noMaxVertices, MEMORYDEVICE_CPU);
+					cpu_vertices->SetFrom(vertices, ORUtils::MemoryBlock<Vector3f>::CUDA_TO_CPU);
+					shoulDelete = true;
+				}
+				else cpu_vertices = vertices;
+
+				Vector3f *verticesArray = cpu_vertices->GetData(MEMORYDEVICE_CPU);
+
+				FILE *f = fopen(fileName, "w+");
+				if (f != NULL)
+				{
+					for (uint i = 0; i < noTotalTriangles; i++)
+					{
+						fprintf(f, "v %f %f %f\n", verticesArray[i][0], verticesArray[i][1], verticesArray[i][2]);
+					}
+					fclose(f);
+				}
+
+				if (shoulDelete) delete cpu_vertices;
 			}
 
 			void WriteOBJ(const char *fileName)

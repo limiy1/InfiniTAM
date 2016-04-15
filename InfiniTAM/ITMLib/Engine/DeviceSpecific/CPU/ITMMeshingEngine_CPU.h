@@ -17,6 +17,7 @@ namespace ITMLib
 		{
 		public:
 			void MeshScene(ITMMesh *mesh, const ITMScene<TVoxel, ITMVoxelBlockHash> *scene);
+			void VertexScene(ITMMesh *mesh, const ITMScene<TVoxel, ITMVoxelBlockHash> *scene);
 
 			ITMMeshingEngine_CPU(void);
 			~ITMMeshingEngine_CPU(void);
