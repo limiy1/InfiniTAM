@@ -151,6 +151,11 @@ void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::CreateExpectedDepths(
 	}
 }
 
+
+/**
+ * The general raycast method, for a whole depth image,
+ * Render an image in renderState (raycastResult), which contains the surface 3D location in each pixel
+ */
 template<class TVoxel, class TIndex>
 static void GenericRaycast(const ITMScene<TVoxel,TIndex> *scene, const Vector2i& imgSize, const Matrix4f& invM, Vector4f projParams, const ITMRenderState *renderState)
 {
@@ -187,6 +192,84 @@ static void GenericRaycast(const ITMScene<TVoxel,TIndex> *scene, const Vector2i&
 	}
 }
 
+/**
+ * Cylinder casting :
+ * Casting rays that forming a cylinder
+ */
+template<class TVoxel, class TIndex>
+static void GenericCylindercast(const ITMScene<TVoxel,TIndex> *scene,  Vector3f centerPt, Vector3f rayDirection, float radius, float incrementalTheta, float depth, const ITMRenderState *renderState)
+{
+	float mu = scene->sceneParams->mu;
+	float oneOverVoxelSize = 1.0f / scene->sceneParams->voxelSize;
+	Vector4f pointsRay;
+	const TVoxel *voxelData = scene->localVBA.GetVoxelBlocks();
+	const typename TIndex::IndexData *voxelIndex = scene->index.getIndexData();
+
+#ifdef WITH_OPENMP
+	#pragma omp parallel for
+#endif
+
+	if ( ( fabs(rayDirection.x) < 1e-2 ) && ( fabs(rayDirection.x) < 1e-2 ) )   //rayDirection is the z-direction
+	{
+		//Some temporary values
+		float uv = rayDirection.x * rayDirection.y;
+		float wv = rayDirection.z * rayDirection.y;
+		float u2w2 = rayDirection.x*rayDirection.x + rayDirection.z*rayDirection.z;
+
+		for (float theta = 0 ; theta < 2*PI ; theta += incrementalTheta)
+		{
+			Vector3f raidusVector(rayDirection.y*cos(theta) - uv*sin(theta),
+								+u2w2*sin(theta),
+								-rayDirection.x*cos(theta) - wv*sin(theta));
+			float radius_coef = radius / sqrt(raidusVector.x * raidusVector.x + raidusVector.y * raidusVector.y + raidusVector.z * raidusVector.z);
+			raidusVector = radius_coef*raidusVector + centerPt;
+
+			castRay<TVoxel, TIndex>(
+				pointsRay,
+				raidusVector,
+				rayDirection,
+				voxelData,
+				voxelIndex,
+				oneOverVoxelSize,
+				mu,
+				depth
+			);
+		}
+	}
+	else
+	{
+		//Some temporary values
+		float wu = rayDirection.z * rayDirection.x;
+		float wv = rayDirection.z * rayDirection.y;
+		float u2v2 = rayDirection.x*rayDirection.x + rayDirection.y*rayDirection.y;
+
+		for (float theta = 0 ; theta < 2*PI ; theta += incrementalTheta)
+		{
+			Vector3f raidusVector(rayDirection.y*cos(theta) + wu*sin(theta),
+								-rayDirection.x*cos(theta) + wv*sin(theta),
+								-u2v2*sin(theta));
+			float radius_coef = radius / sqrt(raidusVector.x * raidusVector.x + raidusVector.y * raidusVector.y + raidusVector.z * raidusVector.z);
+			raidusVector = radius_coef*raidusVector + centerPt;
+
+			castRay<TVoxel, TIndex>(
+				pointsRay,
+				raidusVector,
+				rayDirection,
+				voxelData,
+				voxelIndex,
+				oneOverVoxelSize,
+				mu,
+				depth
+			);
+		}
+	}
+
+}
+
+/**
+ * This fuction render an image for the output
+ * @type : render type (gray, color ...)
+ */
 template<class TVoxel, class TIndex>
 static void RenderImage_common(const ITMScene<TVoxel,TIndex> *scene, const ITMPose *pose, const ITMIntrinsics *intrinsics, 
 	const ITMRenderState *renderState, ITMUChar4Image *outputImage, IITMVisualisationEngine::RenderImageType type)

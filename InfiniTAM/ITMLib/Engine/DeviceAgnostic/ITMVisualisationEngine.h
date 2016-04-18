@@ -89,6 +89,23 @@ _CPU_AND_GPU_CODE_ inline void CreateRenderingBlocks(DEVICEPTR(RenderingBlock) *
 	}
 }
 
+/**
+ * @x : x-pos of the pixel in an image
+ * @y : y-pos
+ * @voxelData : local memory data
+ * @invM : inverse of model view matrix
+ * @projParams: camera intrinsic matrix arranged as (fx,fy,cx,cy)
+ * @oneOverVoxelSize = 1/0.005
+ * @mu
+ * @viewFrstum_minmax: the minimum and maxmum z-plane.
+ *
+ * This function traces ray starting from pixel (x,y), and find the intersecting point with the surface,
+ * It returns the position of this intersection surface (in number of voxel) in pt_out:
+ *
+ * For example:
+ * If the intersection point in metric coordinate system is (0.1, 0.028, 0.142), since voxel size is 0.005, then:
+ * pt_out = (0.1/0.005, 0.028/0.005, 0.142/0.005) = (20, 5.6, 28.4)
+ */
 template<class TVoxel, class TIndex>
 _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, int x, int y, const CONSTPTR(TVoxel) *voxelData,
 	const CONSTPTR(typename TIndex::IndexData) *voxelIndex, Matrix4f invM, Vector4f projParams, float oneOverVoxelSize, 
@@ -99,8 +116,10 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, int x, int y
 	float sdfValue = 1.0f;
 	float totalLength, stepLength, totalLengthMax, stepScale;
 
-	stepScale = mu * oneOverVoxelSize;
+	stepScale = mu * oneOverVoxelSize;    //mu is in meter, voxelSize is in meter, giving stepScale in number of unit of voxel
 
+	//Find the source of pixel (x,y) on z=minimum z-plane
+	//pt_camera_f is a metric vector from camera to point (in meter), totalLength is in "number of voxel" (float)
 	pt_camera_f.z = viewFrustum_minmax.x;
 	pt_camera_f.x = pt_camera_f.z * ((float(x) - projParams.z) * projParams.x);
 	pt_camera_f.y = pt_camera_f.z * ((float(y) - projParams.w) * projParams.y);
@@ -108,6 +127,7 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, int x, int y
 	totalLength = length(TO_VECTOR3(pt_camera_f)) * oneOverVoxelSize;
 	pt_block_s = TO_VECTOR3(invM * pt_camera_f) * oneOverVoxelSize;
 
+	//Find the source of pixel (x,y) on z=maximum z-plane
 	pt_camera_f.z = viewFrustum_minmax.y;
 	pt_camera_f.x = pt_camera_f.z * ((float(x) - projParams.z) * projParams.x);
 	pt_camera_f.y = pt_camera_f.z * ((float(y) - projParams.w) * projParams.y);
@@ -117,12 +137,85 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, int x, int y
 
 	rayDirection = pt_block_e - pt_block_s;
 	float direction_norm = 1.0f / sqrt(rayDirection.x * rayDirection.x + rayDirection.y * rayDirection.y + rayDirection.z * rayDirection.z);
-	rayDirection *= direction_norm;
+	rayDirection *= direction_norm;   //normalized rayDirection
 
 	pt_result = pt_block_s;
 
 	typename TIndex::IndexCache cache;
 
+	/**
+	 * Start the rayCasting, find the intersection of the surface:
+	 * Algorithm is shown in Fig.8 in article
+	 */
+	while (totalLength < totalLengthMax) {
+		sdfValue = readFromSDF_float_uninterpolated(voxelData, voxelIndex, pt_result, hash_found, cache);
+
+		if (!hash_found) {
+			stepLength = SDF_BLOCK_SIZE;
+		} else {
+			if ((sdfValue <= 0.1f) && (sdfValue >= -0.5f)) {
+				sdfValue = readFromSDF_float_interpolated(voxelData, voxelIndex, pt_result, hash_found, cache);
+			}
+			if (sdfValue <= 0.0f) break;
+			stepLength = MAX(sdfValue * stepScale, 1.0f);
+		}
+
+		pt_result += stepLength * rayDirection; totalLength += stepLength;
+	}
+
+	if (sdfValue <= 0.0f)
+	{
+		stepLength = sdfValue * stepScale;
+		pt_result += stepLength * rayDirection;
+
+		sdfValue = readFromSDF_float_interpolated(voxelData, voxelIndex, pt_result, hash_found, cache);
+		stepLength = sdfValue * stepScale;
+		pt_result += stepLength * rayDirection;
+
+		pt_found = true;
+	} else pt_found = false;
+
+	pt_out.x = pt_result.x; pt_out.y = pt_result.y; pt_out.z = pt_result.z;
+	if (pt_found) pt_out.w = 1.0f; else pt_out.w = 0.0f;
+
+	return pt_found;
+}
+
+
+/**
+ * @basePt : base point of the raycast, in world coordinate system (in meter)
+ * @rayDirection : ray cast direction, define an unique ray with basePt (in meter)
+ * @voxelData : local memory data
+ * @oneOverVoxelSize = 1/0.005
+ * @mu
+ * @depth: the depth along the ray to test (in meter)
+ */
+template<class TVoxel, class TIndex>
+_CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, Vector3f basePt, Vector3f rayDirection, const CONSTPTR(TVoxel) *voxelData,
+	const CONSTPTR(typename TIndex::IndexData) *voxelIndex, float oneOverVoxelSize,	float mu, float depth)
+{
+	Vector3f pt_block_s, pt_block_e, pt_result;
+	bool pt_found, hash_found;
+	float sdfValue = 1.0f;
+	float totalLength, stepLength, totalLengthMax, stepScale;
+
+	stepScale = mu * oneOverVoxelSize;    //mu is in mm, voxelSize is in mm, giving stepScale in number of unit of voxel
+
+	//Find the source of pixel (x,y) on -depth and +depth
+	totalLength = 0;
+	pt_block_s = (basePt - depth * rayDirection) * oneOverVoxelSize;
+
+	totalLengthMax = 2*depth;
+	pt_block_e = (basePt + depth * rayDirection) * oneOverVoxelSize;
+
+	pt_result = pt_block_s;
+
+	typename TIndex::IndexCache cache;
+
+	/**
+	 * Start the rayCasting, find the intersection of the surface:
+	 * Algorithm is shown in Fig.8 in article
+	 */
 	while (totalLength < totalLengthMax) {
 		sdfValue = readFromSDF_float_uninterpolated(voxelData, voxelIndex, pt_result, hash_found, cache);
 
@@ -278,6 +371,17 @@ _CPU_AND_GPU_CODE_ inline void drawPixelColour(DEVICEPTR(Vector4u) & dest, const
 	dest.w = 255;
 }
 
+template<class TVoxel, class TIndex>
+_CPU_AND_GPU_CODE_ inline void drawPixelCustom(DEVICEPTR(Vector4u) & dest, const CONSTPTR(Vector3f) & point,
+	const CONSTPTR(TVoxel) *voxelBlockData, const CONSTPTR(typename TIndex::IndexData) *indexData)
+{
+	Vector4f clr = VoxelColorReader<TVoxel::hasColorInformation, TVoxel, TIndex>::interpolate(voxelBlockData, indexData, point);
+
+	dest.x = (uchar)(clr.x * 255.0f);
+	dest.y = (uchar)(clr.y * 255.0f);
+	dest.z = (uchar)(clr.z * 255.0f);
+	dest.w = 255;
+}
 
 template<class TVoxel, class TIndex>
 _CPU_AND_GPU_CODE_ inline void processPixelICP(DEVICEPTR(Vector4u) &outRendering, DEVICEPTR(Vector4f) &pointsMap, DEVICEPTR(Vector4f) &normalsMap,
@@ -365,8 +469,9 @@ _CPU_AND_GPU_CODE_ inline void processPixelForwardRender(DEVICEPTR(Vector4u) *ou
 	else outRendering[locId] = Vector4u((uchar)0);
 }
 
+
 template<class TVoxel, class TIndex>
-_CPU_AND_GPU_CODE_ inline void processPixelGrey(DEVICEPTR(Vector4u) &outRendering, const CONSTPTR(Vector3f) & point, 
+_CPU_AND_GPU_CODE_ inline void processPixelGrey(DEVICEPTR(Vector4u) &outRendering, const CONSTPTR(Vector3f) & point,
 	bool foundPoint, const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(typename TIndex::IndexData) *voxelIndex, 
 	Vector3f lightSource)
 {
@@ -379,9 +484,10 @@ _CPU_AND_GPU_CODE_ inline void processPixelGrey(DEVICEPTR(Vector4u) &outRenderin
 	else outRendering = Vector4u((uchar)0);
 }
 
+//Get a voxel's color
 template<class TVoxel, class TIndex>
 _CPU_AND_GPU_CODE_ inline void processPixelColour(DEVICEPTR(Vector4u) &outRendering, const CONSTPTR(Vector3f) & point,
-	bool foundPoint, const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(typename TIndex::IndexData) *voxelIndex, 
+	bool foundPoint, const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(typename TIndex::IndexData) *voxelIndex,
 	Vector3f lightSource)
 {
 	Vector3f outNormal;
@@ -393,7 +499,7 @@ _CPU_AND_GPU_CODE_ inline void processPixelColour(DEVICEPTR(Vector4u) &outRender
 	else outRendering = Vector4u((uchar)0);
 }
 
-
+//Get a voxel's normal
 template<class TVoxel, class TIndex>
 _CPU_AND_GPU_CODE_ inline void processPixelNormal(DEVICEPTR(Vector4u) &outRendering, const CONSTPTR(Vector3f) & point,
 	bool foundPoint, const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(typename TIndex::IndexData) *voxelIndex,
@@ -405,5 +511,20 @@ _CPU_AND_GPU_CODE_ inline void processPixelNormal(DEVICEPTR(Vector4u) &outRender
 	computeNormalAndAngle<TVoxel, TIndex>(foundPoint, point, voxelData, voxelIndex, lightSource, outNormal, angle);
 
 	if (foundPoint) drawPixelNormal(outRendering, outNormal);
+	else outRendering = Vector4u((uchar)0);
+}
+
+//Get pixel custom data as color information
+template<class TVoxel, class TIndex>
+_CPU_AND_GPU_CODE_ inline void processPixelCustom(DEVICEPTR(Vector4u) &outRendering, const CONSTPTR(Vector3f) & point,
+	bool foundPoint, const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(typename TIndex::IndexData) *voxelIndex,
+	Vector3f lightSource)
+{
+	Vector3f outNormal;
+	float angle;
+
+	computeNormalAndAngle<TVoxel, TIndex>(foundPoint, point, voxelData, voxelIndex, lightSource, outNormal, angle);
+
+	if (foundPoint) drawPixelCustom<TVoxel, TIndex>(outRendering, point, voxelData, voxelIndex);
 	else outRendering = Vector4u((uchar)0);
 }

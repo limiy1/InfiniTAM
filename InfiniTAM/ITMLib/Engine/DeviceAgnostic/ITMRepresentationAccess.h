@@ -9,6 +9,11 @@ template<typename T> _CPU_AND_GPU_CODE_ inline int hashIndex(const THREADPTR(T) 
 	return (((uint)blockPos.x * 73856093u) ^ ((uint)blockPos.y * 19349669u) ^ ((uint)blockPos.z * 83492791u)) & (uint)SDF_HASH_MASK;
 }
 
+/**
+ * Find the voxel sequence ID inside a block
+ * @point: information recorded inside "renderState->raycastResult",
+ * @blockPos: information recorded inside "ITMHashEntry::pos", in block coordinates, (i.e. just counting block number along each axis)
+ */
 _CPU_AND_GPU_CODE_ inline int pointToVoxelBlockPos(const THREADPTR(Vector3i) & point, THREADPTR(Vector3i) &blockPos) {
 	blockPos.x = ((point.x < 0) ? point.x - SDF_BLOCK_SIZE + 1 : point.x) / SDF_BLOCK_SIZE;
 	blockPos.y = ((point.y < 0) ? point.y - SDF_BLOCK_SIZE + 1 : point.y) / SDF_BLOCK_SIZE;
@@ -19,6 +24,9 @@ _CPU_AND_GPU_CODE_ inline int pointToVoxelBlockPos(const THREADPTR(Vector3i) & p
 	return point.x + (point.y - blockPos.x) * SDF_BLOCK_SIZE + (point.z - blockPos.y) * SDF_BLOCK_SIZE * SDF_BLOCK_SIZE - blockPos.z * SDF_BLOCK_SIZE3;
 }
 
+/**
+ * Find voxel information, given the 3D position (
+ */
 _CPU_AND_GPU_CODE_ inline int findVoxel(const CONSTPTR(ITMLib::Objects::ITMVoxelBlockHash::IndexData) *voxelIndex, const THREADPTR(Vector3i) & point,
 	THREADPTR(bool) &isFound, THREADPTR(ITMLib::Objects::ITMVoxelBlockHash::IndexCache) & cache)
 {
@@ -33,6 +41,7 @@ _CPU_AND_GPU_CODE_ inline int findVoxel(const CONSTPTR(ITMLib::Objects::ITMVoxel
 
 	int hashIdx = hashIndex(blockPos);
 
+	//Find the block in hashtable, with block position (blockPos)
 	while (true) 
 	{
 		ITMHashEntry hashEntry = voxelIndex[hashIdx];
@@ -184,6 +193,10 @@ _CPU_AND_GPU_CODE_ inline float readFromSDF_float_interpolated(const CONSTPTR(TV
 	return TVoxel::SDF_valueToFloat((1.0f - coeff.z) * res1 + coeff.z * res2);
 }
 
+/**
+ * return the voxel block color data: interpolated between the 8 voxels
+ * @point : unit is the same as in "renderState->raycastResult"
+ */
 template<class TVoxel, class TIndex>
 _CPU_AND_GPU_CODE_ inline Vector4f readFromSDF_color4u_interpolated(const CONSTPTR(TVoxel) *voxelData,
 	const CONSTPTR(typename TIndex::IndexData) *voxelIndex, const THREADPTR(Vector3f) & point, 
