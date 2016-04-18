@@ -22,13 +22,15 @@ namespace ITMLib
 		template<class TVoxel, class TIndex>
 		class LIMUPrimitiveFitter
 		{
+		private:
+			const IITMVisualisationEngine *visualisationEngine;
 		public:
 			/// Process a single seed fit
 			void ProcessOneSeed(int x, int y, ITMScene<TVoxel, TIndex> *scene, ITMRenderState *renderState);
 
 			/** \brief Constructor
 			*/
-			explicit LIMUPrimitiveFitter(const ITMLibSettings *settings);
+			explicit LIMUPrimitiveFitter(const ITMLibSettings *settings, const IITMVisualisationEngine *visualisationEngine);
 			~LIMUPrimitiveFitter();
 		};
 	}

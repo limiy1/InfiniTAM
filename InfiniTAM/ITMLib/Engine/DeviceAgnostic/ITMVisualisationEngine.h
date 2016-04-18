@@ -255,12 +255,17 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, Vector3f bas
 	pt_out.x = pt_result.x; pt_out.y = pt_result.y; pt_out.z = pt_result.z;
 	if (pt_found)
 	{
-		pt_out.w = 1.0f; else pt_out.w = 0.0f;
+		pt_out.w = 1.0f;
 		bool isFound;
 
 		//Color the corresponding voxel
-		TVoxel voxel = readVoxel(voxelData, voxelIndex, pt_out, isFound);
+		//wrong here, the voxel data is read only here
+		TVoxel &voxel = readVoxel(voxelData, voxelIndex, pt_out, isFound);
 		voxel.cstm = 1;
+	}
+	else
+	{
+		pt_out.w = 0.0f;
 	}
 
 	return pt_found;

@@ -469,7 +469,7 @@ void ITMVisualisationEngine_CPU<TVoxel,TIndex>::RenderImage(const ITMPose *pose,
 }
 
 template<class TVoxel>
-void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::RenderImage(const ITMPose *pose,  const ITMIntrinsics *intrinsics, 
+void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::RenderImage(const ITMPose *pose,  const ITMIntrinsics *intrinsics,
 	const ITMRenderState *renderState, ITMUChar4Image *outputImage, IITMVisualisationEngine::RenderImageType type) const
 {
 	RenderImage_common(this->scene, pose, intrinsics, renderState, outputImage, type);
@@ -482,7 +482,7 @@ void ITMVisualisationEngine_CPU<TVoxel, TIndex>::FindSurface(const ITMPose *pose
 }
 
 template<class TVoxel>
-void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::FindSurface(const ITMPose *pose, const ITMIntrinsics *intrinsics, 
+void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::FindSurface(const ITMPose *pose, const ITMIntrinsics *intrinsics,
 	const ITMRenderState *renderState) const
 {
 	GenericRaycast(this->scene, renderState->raycastResult->noDims, pose->GetInvM(), intrinsics->projectionParamsSimple.all, renderState);
@@ -496,7 +496,7 @@ void ITMVisualisationEngine_CPU<TVoxel,TIndex>::CreatePointCloud(const ITMView *
 }
 
 template<class TVoxel>
-void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::CreatePointCloud(const ITMView *view, ITMTrackingState *trackingState, 
+void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::CreatePointCloud(const ITMView *view, ITMTrackingState *trackingState,
 	ITMRenderState *renderState, bool skipPoints) const
 {
 	CreatePointCloud_common(this->scene, view, trackingState, renderState, skipPoints);
@@ -509,7 +509,7 @@ void ITMVisualisationEngine_CPU<TVoxel,TIndex>::CreateICPMaps(const ITMView *vie
 }
 
 template<class TVoxel>
-void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::CreateICPMaps(const ITMView *view, ITMTrackingState *trackingState, 
+void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::CreateICPMaps(const ITMView *view, ITMTrackingState *trackingState,
 	ITMRenderState *renderState) const
 {
 	CreateICPMaps_common(this->scene, view, trackingState, renderState);
@@ -527,6 +527,20 @@ void ITMVisualisationEngine_CPU<TVoxel, ITMVoxelBlockHash>::ForwardRender(const 
 	ITMRenderState *renderState) const
 {
 	ForwardRender_common(this->scene, view, trackingState, renderState);
+}
+
+template<class TVoxel, class TIndex>
+void ITMVisualisationEngine_CPU<TVoxel, TIndex>::FindLocalPatch(Vector3f centerPt,
+		Vector3f rayDirection, float radius, float incrementalTheta, float depth, const ITMRenderState *renderState) const
+{
+	GenericCylindercast(this->scene, centerPt, rayDirection, radius, incrementalTheta, depth, renderState);
+}
+
+template<class TVoxel>
+void ITMVisualisationEngine_CPU<TVoxel, ITMVoxelBlockHash>::FindLocalPatch(Vector3f centerPt,
+		Vector3f rayDirection, float radius, float incrementalTheta, float depth, const ITMRenderState *renderState) const
+{
+	GenericCylindercast(this->scene, centerPt, rayDirection, radius, incrementalTheta, depth, renderState);
 }
 
 template<class TVoxel, class TIndex>

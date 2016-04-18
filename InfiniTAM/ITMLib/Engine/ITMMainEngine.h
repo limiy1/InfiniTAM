@@ -53,18 +53,18 @@ namespace ITMLib
 			bool fusionActive, mainProcessingActive;
 
 			ITMLowLevelEngine *lowLevelEngine;
-			IITMVisualisationEngine *visualisationEngine;
+			IITMVisualisationEngine *visualisationEngine;    //Can not change the scene
 
 			ITMMeshingEngine<ITMVoxel, ITMVoxelIndex> *meshingEngine;
 			ITMMesh *mesh;
 
 			ITMViewBuilder *viewBuilder;		
-			ITMDenseMapper<ITMVoxel,ITMVoxelIndex> *denseMapper;
+			ITMDenseMapper<ITMVoxel,ITMVoxelIndex> *denseMapper;    //Can change the scene
 			ITMTrackingController *trackingController;
 			LIMUPrimitiveFitter<ITMVoxel, ITMVoxelIndex> *primitiveFitter;
 			//ITMDenseMapper<ITMVoxel, ITMVoxelIndex> *primitiveFitter;
 
-			ITMTracker *tracker;
+			ITMTracker *tracker;              //Can change the scene
 			ITMIMUCalibrator *imuCalibrator;
 
 			ITMView *view;

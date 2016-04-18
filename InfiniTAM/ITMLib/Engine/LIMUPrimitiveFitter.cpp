@@ -1,8 +1,7 @@
 // Copyright 2014-2015 Isis Innovation Limited and the authors of InfiniTAM
 
 #include "LIMUPrimitiveFitter.h"
-#include "DeviceAgnostic\ITMRepresentationAccess.h"
-#include "ITMVisualisationEngine_CPU.h"
+#include "DeviceAgnostic/ITMRepresentationAccess.h"
 
 #include "../Objects/ITMRenderState_VH.h"
 
@@ -11,9 +10,9 @@
 using namespace ITMLib::Engine;
 
 template<class TVoxel, class TIndex>
-LIMUPrimitiveFitter<TVoxel, TIndex>::LIMUPrimitiveFitter(const ITMLibSettings *settings)
+LIMUPrimitiveFitter<TVoxel, TIndex>::LIMUPrimitiveFitter(const ITMLibSettings *settings, const IITMVisualisationEngine *visualisationEngine)
 {
-
+	this->visualisationEngine = visualisationEngine;
 }
 
 template<class TVoxel, class TIndex>
@@ -38,8 +37,8 @@ void LIMUPrimitiveFitter<TVoxel, TIndex>::ProcessOneSeed(int x, int y, ITMScene<
 	std::cout << "The point is at " << seedPos3D << std::endl;
 	std::cout << "The normal is " << normal << std::endl;
 
-	//Cast the cylinder, need the visualization engin
-
+	//Cast the cylinder, need the visualization engine
+	visualisationEngine->FindLocalPatch(point, normal, 10, 10, 10, renderState);
 
 }
 

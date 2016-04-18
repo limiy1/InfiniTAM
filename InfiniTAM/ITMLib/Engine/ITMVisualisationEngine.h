@@ -75,6 +75,12 @@ namespace ITMLib
 			virtual void ForwardRender(const ITMView *view, ITMTrackingState *trackingState,
 				ITMRenderState *renderState) const = 0;
 
+			/**
+			 * Find a local patch by cylinder casting
+			 */
+			virtual void FindLocalPatch(Vector3f centerPt, Vector3f rayDirection, float radius,
+					float incrementalTheta, float depth, const ITMRenderState *renderState) const = 0;
+
 			/** Creates a render state, containing rendering info
 			for the scene.
 			*/

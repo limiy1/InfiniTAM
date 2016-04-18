@@ -55,7 +55,7 @@ ITMMainEngine::ITMMainEngine(const ITMLibSettings *settings, const ITMRGBDCalib 
 	denseMapper = new ITMDenseMapper<ITMVoxel, ITMVoxelIndex>(settings);
 	denseMapper->ResetScene(scene);
 
-	primitiveFitter = new LIMUPrimitiveFitter<ITMVoxel, ITMVoxelIndex>(settings);
+	primitiveFitter = new LIMUPrimitiveFitter<ITMVoxel, ITMVoxelIndex>(settings, visualisationEngine);
 
 	imuCalibrator = new ITMIMUCalibrator_iPad();
 	tracker = ITMTrackerFactory<ITMVoxel, ITMVoxelIndex>::Instance().Make(trackedImageSize, settings, lowLevelEngine, imuCalibrator, scene);
