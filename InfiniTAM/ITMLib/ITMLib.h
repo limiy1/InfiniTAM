@@ -100,6 +100,8 @@
 #endif
 
 #include "Engine/ITMDenseMapper.h"
+#include "Engine/LIMUPrimitiveFitter.h"
+
 #include "Engine/ITMMainEngine.h"
 
 using namespace ITMLib::Objects;

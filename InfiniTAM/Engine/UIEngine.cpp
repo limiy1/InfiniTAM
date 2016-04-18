@@ -199,6 +199,10 @@ void UIEngine::glutKeyUpFunction(unsigned char key, int x, int y)
 		}
 		uiEngine->needsRefresh = true;
 		break;
+	case 'p':
+		printf("processing curvature analysis ...\n");
+		uiEngine->mainEngine->projectCyliner();
+		break;
 	case 'c':
 		uiEngine->currentColourMode++; if ((unsigned)uiEngine->currentColourMode >= uiEngine->colourModes.size()) uiEngine->currentColourMode = 0;
 		uiEngine->needsRefresh = true;

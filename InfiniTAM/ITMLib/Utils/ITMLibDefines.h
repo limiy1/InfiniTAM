@@ -99,12 +99,16 @@ struct ITMVoxel_f_rgb
 	/** Number of observations that made up @p clr. */
 	uchar w_color;
 
+	/** custom information for test */
+	uchar cstm;
+
 	_CPU_AND_GPU_CODE_ ITMVoxel_f_rgb()
 	{
 		sdf = SDF_initialValue();
 		w_depth = 0;
 		clr = (uchar)0;
 		w_color = 0;
+		cstm = (uchar)0;
 	}
 };
 
@@ -130,12 +134,16 @@ struct ITMVoxel_s_rgb
 	/** Number of observations that made up @p clr. */
 	uchar w_color;
 
+	/** custom information for test */
+	uchar cstm;
+
 	_CPU_AND_GPU_CODE_ ITMVoxel_s_rgb()
 	{
 		sdf = SDF_initialValue();
 		w_depth = 0;
 		clr = (uchar)0;
 		w_color = 0;
+		cstm = 0;
 	}
 };
 

@@ -9,6 +9,7 @@ ITMLib.h
 
 ##
 SET(ITMLIB_ENGINE_SOURCES
+Engine/LIMUPrimitiveFitter.cpp
 Engine/ITMColorTracker.cpp
 Engine/ITMDenseMapper.cpp
 Engine/ITMDepthTracker.cpp
@@ -22,6 +23,7 @@ Engine/ITMVisualisationEngine.cpp
 )
 
 SET(ITMLIB_ENGINE_HEADERS
+Engine/LIMUPrimitiveFitter.h
 Engine/ITMColorTracker.h
 Engine/ITMCompositeTracker.h
 Engine/ITMDenseMapper.h

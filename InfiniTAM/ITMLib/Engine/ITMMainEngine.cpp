@@ -55,6 +55,8 @@ ITMMainEngine::ITMMainEngine(const ITMLibSettings *settings, const ITMRGBDCalib 
 	denseMapper = new ITMDenseMapper<ITMVoxel, ITMVoxelIndex>(settings);
 	denseMapper->ResetScene(scene);
 
+	primitiveFitter = new LIMUPrimitiveFitter<ITMVoxel, ITMVoxelIndex>(settings);
+
 	imuCalibrator = new ITMIMUCalibrator_iPad();
 	tracker = ITMTrackerFactory<ITMVoxel, ITMVoxelIndex>::Instance().Make(trackedImageSize, settings, lowLevelEngine, imuCalibrator, scene);
 	trackingController = new ITMTrackingController(tracker, visualisationEngine, lowLevelEngine, settings);
@@ -123,8 +125,11 @@ void ITMMainEngine::ProcessFrame(ITMUChar4Image *rgbImage, ITMShortImage *rawDep
 	// tracking
 	trackingController->Track(trackingState, view);
 
-	// fusion
+	// fusion, and update renderState_live
 	if (fusionActive) denseMapper->ProcessFrame(view, trackingState, scene, renderState_live);
+
+	// try to fit primitive, use renderState_live
+
 
 	// raycast to renderState_live for tracking and free visualisation
 	trackingController->Prepare(trackingState, view, renderState_live);
@@ -176,7 +181,7 @@ void ITMMainEngine::GetImage(ITMUChar4Image *out, GetImageType getImageType, ITM
 	case ITMMainEngine::InfiniTAM_IMAGE_FREECAMERA_COLOUR_FROM_VOLUME:
 	case ITMMainEngine::InfiniTAM_IMAGE_FREECAMERA_COLOUR_FROM_NORMAL:
 	{
-		IITMVisualisationEngine::RenderImageType type = IITMVisualisationEngine::RENDER_SHADED_GREYSCALE;
+		IITMVisualisationEngine::RenderImageType type = IITMVisualisationEngine::RENDER_CUSTOM;
 		if (getImageType == ITMMainEngine::InfiniTAM_IMAGE_FREECAMERA_COLOUR_FROM_VOLUME) type = IITMVisualisationEngine::RENDER_COLOUR_FROM_VOLUME;
 		else if (getImageType == ITMMainEngine::InfiniTAM_IMAGE_FREECAMERA_COLOUR_FROM_NORMAL) type = IITMVisualisationEngine::RENDER_COLOUR_FROM_NORMAL;
 		if (renderState_freeview == NULL) renderState_freeview = visualisationEngine->CreateRenderState(out->noDims);
@@ -193,6 +198,15 @@ void ITMMainEngine::GetImage(ITMUChar4Image *out, GetImageType getImageType, ITM
 	case ITMMainEngine::InfiniTAM_IMAGE_UNKNOWN:
 		break;
 	};
+}
+
+void ITMMainEngine::projectCyliner()
+{
+	Vector2i imgSize = this->renderState_live->raycastResult->noDims;
+	int x = imgSize.x / 2;
+	int y = imgSize.y / 2;
+
+	primitiveFitter->ProcessOneSeed(x, y, this->scene, this->renderState_live);
 }
 
 void ITMMainEngine::turnOnIntegration() { fusionActive = true; }

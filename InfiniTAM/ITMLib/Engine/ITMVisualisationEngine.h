@@ -22,7 +22,8 @@ namespace ITMLib
 			{
 				RENDER_SHADED_GREYSCALE,
 				RENDER_COLOUR_FROM_VOLUME,
-				RENDER_COLOUR_FROM_NORMAL
+				RENDER_COLOUR_FROM_NORMAL,
+				RENDER_CUSTOM
 			};
 
 			virtual ~IITMVisualisationEngine(void) {}

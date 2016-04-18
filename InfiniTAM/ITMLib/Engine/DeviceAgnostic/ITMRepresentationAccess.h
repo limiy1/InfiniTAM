@@ -25,7 +25,7 @@ _CPU_AND_GPU_CODE_ inline int pointToVoxelBlockPos(const THREADPTR(Vector3i) & p
 }
 
 /**
- * Find voxel information, given the 3D position (
+ * Find voxel index, given the 3D position (coordinate in number of voxel)
  */
 _CPU_AND_GPU_CODE_ inline int findVoxel(const CONSTPTR(ITMLib::Objects::ITMVoxelBlockHash::IndexData) *voxelIndex, const THREADPTR(Vector3i) & point,
 	THREADPTR(bool) &isFound, THREADPTR(ITMLib::Objects::ITMVoxelBlockHash::IndexCache) & cache)
@@ -91,6 +91,10 @@ _CPU_AND_GPU_CODE_ inline int findVoxel(const CONSTPTR(ITMLib::Objects::ITMPlain
 	return findVoxel(voxelIndex, point_orig, isFound);
 }
 
+/**
+* Get the voxel by the 3D position (coordinate in number of voxel),
+* compared to "findVoxel", this function needs to be provided "voxelData" (containg an array of voxel information)
+*/
 template<class TVoxel>
 _CPU_AND_GPU_CODE_ inline TVoxel readVoxel(const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(ITMLib::Objects::ITMVoxelBlockHash::IndexData) *voxelIndex,
 	const THREADPTR(Vector3i) & point, THREADPTR(bool) &isFound, THREADPTR(ITMLib::Objects::ITMVoxelBlockHash::IndexCache) & cache)
@@ -234,6 +238,24 @@ _CPU_AND_GPU_CODE_ inline Vector4f readFromSDF_color4u_interpolated(const CONSTP
 	return ret4 / 255.0f;
 }
 
+/**
+* return the voxel block custom data: interpolated between the 8 voxels
+* @point : unit is the same as in "renderState->raycastResult"
+*/
+template<class TVoxel, class TIndex>
+_CPU_AND_GPU_CODE_ inline Vector4f readFromSDF_customVal(const CONSTPTR(TVoxel) *voxelData,
+	const CONSTPTR(typename TIndex::IndexData) *voxelIndex, const THREADPTR(Vector3f) & point,
+	THREADPTR(typename TIndex::IndexCache) & cache)
+{
+	TVoxel resn; Vector3f ret = 0.0f; Vector4f ret4; bool isFound;
+	Vector3f coeff; Vector3i pos; TO_INT_FLOOR3(pos, coeff, point);
+
+	resn = readVoxel(voxelData, voxelIndex, pos + Vector3i(0, 0, 0), isFound, cache);
+	ret =  resn.clr.toFloat();
+
+	return ret4 / 255.0f;
+}
+
 template<class TVoxel, class TIndex>
 _CPU_AND_GPU_CODE_ inline Vector3f computeSingleNormalFromSDF(const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(TIndex) *voxelIndex, const THREADPTR(Vector3f) &point)
 {
@@ -244,6 +266,7 @@ _CPU_AND_GPU_CODE_ inline Vector3f computeSingleNormalFromSDF(const CONSTPTR(TVo
 	Vector3f ncoeff(1.0f - coeff.x, 1.0f - coeff.y, 1.0f - coeff.z);
 
 	// all 8 values are going to be reused several times
+	// The 8 nearest voxel to "point"
 	Vector4f front, back;
 	front.x = readVoxel(voxelData, voxelIndex, pos + Vector3i(0, 0, 0), isFound).sdf;
 	front.y = readVoxel(voxelData, voxelIndex, pos + Vector3i(1, 0, 0), isFound).sdf;
@@ -349,6 +372,7 @@ _CPU_AND_GPU_CODE_ inline Vector3f computeSingleNormalFromSDF(const CONSTPTR(TVo
 	return ret;
 }
 
+// For custom data, if it has color, it has custom data as well
 template<bool hasColor,class TVoxel,class TIndex> struct VoxelColorReader;
 
 template<class TVoxel, class TIndex>
@@ -356,6 +380,12 @@ struct VoxelColorReader<false,TVoxel,TIndex> {
 	_CPU_AND_GPU_CODE_ static Vector4f interpolate(const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(typename TIndex::IndexData) *voxelIndex,
 		const THREADPTR(Vector3f) & point)
 	{ return Vector4f(0.0f,0.0f,0.0f,0.0f); }
+
+	_CPU_AND_GPU_CODE_ static uchar getCustomValue(const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(typename TIndex::IndexData) *voxelIndex,
+		const THREADPTR(Vector3f) & point)
+	{
+		return uchar(0);
+	}
 };
 
 template<class TVoxel, class TIndex>
@@ -365,5 +395,18 @@ struct VoxelColorReader<true,TVoxel,TIndex> {
 	{
 		typename TIndex::IndexCache cache;
 		return readFromSDF_color4u_interpolated<TVoxel,TIndex>(voxelData, voxelIndex, point, cache);
+	}
+
+	_CPU_AND_GPU_CODE_ static uchar getCustomValue(const CONSTPTR(TVoxel) *voxelData, const CONSTPTR(typename TIndex::IndexData) *voxelIndex,
+		const THREADPTR(Vector3f) & point)
+	{
+		typename TIndex::IndexCache cache;
+		Vector3f coeff; Vector3i pos; TO_INT_FLOOR3(pos, coeff, point);
+		bool isFound;
+
+		//Read the pixel
+		TVoxel resn = readVoxel(voxelData, voxelIndex, pos, isFound, cache);
+
+		return (resn.cstm);
 	}
 };

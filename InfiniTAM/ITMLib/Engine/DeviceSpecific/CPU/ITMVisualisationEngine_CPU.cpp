@@ -53,7 +53,7 @@ void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::FindVisibleBlocks(con
 	int noVisibleEntries = 0;
 	int *visibleEntryIDs = renderState_vh->GetVisibleEntryIDs();
 
-	//build visible list
+	//build visible list (of blocks)
 	for (int targetIdx = 0; targetIdx < noTotalEntries; targetIdx++)
 	{
 		unsigned char hashVisibleType = 0;// = entriesVisibleType[targetIdx];
@@ -125,6 +125,7 @@ void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::CreateExpectedDepths(
 		}
 		if (!validProjection) continue;
 
+		//If current block is in the camera's field of view, then do what ?
 		Vector2i requiredRenderingBlocks((int)ceilf((float)(lowerRight.x - upperLeft.x + 1) / (float)renderingBlockSizeX), 
 			(int)ceilf((float)(lowerRight.y - upperLeft.y + 1) / (float)renderingBlockSizeY));
 		int requiredNumBlocks = requiredRenderingBlocks.x * requiredRenderingBlocks.y;
@@ -153,8 +154,10 @@ void ITMVisualisationEngine_CPU<TVoxel,ITMVoxelBlockHash>::CreateExpectedDepths(
 
 
 /**
- * The general raycast method, for a whole depth image,
- * Render an image in renderState (raycastResult), which contains the surface 3D location in each pixel
+ * The general raycast method for a whole depth image,
+ * Results an image : renderState.raycastResult, which contains the surface 3D location in each pixel
+ * Pre-request:
+ * renderingRangeImage: contains the min-z and max-z for each pixel
  */
 template<class TVoxel, class TIndex>
 static void GenericRaycast(const ITMScene<TVoxel,TIndex> *scene, const Vector2i& imgSize, const Matrix4f& invM, Vector4f projParams, const ITMRenderState *renderState)
@@ -195,6 +198,9 @@ static void GenericRaycast(const ITMScene<TVoxel,TIndex> *scene, const Vector2i&
 /**
  * Cylinder casting :
  * Casting rays that forming a cylinder
+ * @centerPt: center point of the cylinder (in number of voxel)
+ * @radius: radius of the cynlinder (in meter)
+ * @depth: height of the cynlinder (in meter)
  */
 template<class TVoxel, class TIndex>
 static void GenericCylindercast(const ITMScene<TVoxel,TIndex> *scene,  Vector3f centerPt, Vector3f rayDirection, float radius, float incrementalTheta, float depth, const ITMRenderState *renderState)
@@ -221,7 +227,8 @@ static void GenericCylindercast(const ITMScene<TVoxel,TIndex> *scene,  Vector3f 
 			Vector3f raidusVector(rayDirection.y*cos(theta) - uv*sin(theta),
 								+u2w2*sin(theta),
 								-rayDirection.x*cos(theta) - wv*sin(theta));
-			float radius_coef = radius / sqrt(raidusVector.x * raidusVector.x + raidusVector.y * raidusVector.y + raidusVector.z * raidusVector.z);
+			//Here, convert radius in number of voxel
+			float radius_coef = radius * oneOverVoxelSize / sqrt(raidusVector.x * raidusVector.x + raidusVector.y * raidusVector.y + raidusVector.z * raidusVector.z);
 			raidusVector = radius_coef*raidusVector + centerPt;
 
 			castRay<TVoxel, TIndex>(
@@ -268,7 +275,15 @@ static void GenericCylindercast(const ITMScene<TVoxel,TIndex> *scene,  Vector3f 
 
 /**
  * This fuction render an image for the output
+ * @secne: the whole constructed scene
+ * @pose : the camera pose
+ * @intrinsics: the camera's intrinsic
+ * @renderState:
+ * @outputImage: the render result
  * @type : render type (gray, color ...)
+
+ * Pre-request:
+ * - ITMRenderState::renderingRangeImage: contains for each pixel min-z and max-z (for raycasting)
  */
 template<class TVoxel, class TIndex>
 static void RenderImage_common(const ITMScene<TVoxel,TIndex> *scene, const ITMPose *pose, const ITMIntrinsics *intrinsics, 
@@ -289,6 +304,16 @@ static void RenderImage_common(const ITMScene<TVoxel,TIndex> *scene, const ITMPo
 	    (!TVoxel::hasColorInformation)) type = IITMVisualisationEngine::RENDER_SHADED_GREYSCALE;
 
 	switch (type) {
+	case IITMVisualisationEngine::RENDER_CUSTOM:
+#ifdef WITH_OPENMP
+#pragma omp parallel for
+#endif
+		for (int locId = 0; locId < imgSize.x * imgSize.y; locId++)
+		{
+			Vector4f ptRay = pointsRay[locId];
+			processPixelCustom<TVoxel, TIndex>(outRendering[locId], ptRay.toVector3(), ptRay.w > 0, voxelData, voxelIndex, lightSource);
+		}
+		break;
 	case IITMVisualisationEngine::RENDER_COLOUR_FROM_VOLUME:
 #ifdef WITH_OPENMP
 		#pragma omp parallel for

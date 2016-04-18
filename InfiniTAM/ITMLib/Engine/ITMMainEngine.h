@@ -61,6 +61,8 @@ namespace ITMLib
 			ITMViewBuilder *viewBuilder;		
 			ITMDenseMapper<ITMVoxel,ITMVoxelIndex> *denseMapper;
 			ITMTrackingController *trackingController;
+			LIMUPrimitiveFitter<ITMVoxel, ITMVoxelIndex> *primitiveFitter;
+			//ITMDenseMapper<ITMVoxel, ITMVoxelIndex> *primitiveFitter;
 
 			ITMTracker *tracker;
 			ITMIMUCalibrator *imuCalibrator;
@@ -109,6 +111,9 @@ namespace ITMLib
 			Vector2i GetImageSize(void) const;
 
 			void GetImage(ITMUChar4Image *out, GetImageType getImageType, ITMPose *pose = NULL, ITMIntrinsics *intrinsics = NULL);
+
+			// Project cylinder at center point of the image
+			void projectCyliner();
 
 			/// switch for turning intergration on/off
 			void turnOnIntegration();

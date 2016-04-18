@@ -25,6 +25,12 @@ static const CONSTPTR(int) MAX_RENDERING_BLOCKS = 65536*4;
 //static const int MAX_RENDERING_BLOCKS = 16384;
 static const CONSTPTR(int) minmaximg_subsample = 8;
 
+/**
+* Verify a single block, check if it is valid for projection
+* 1. check if partial of the block is in camera's current field of view
+*   - z-check
+*   - projector 8 corners downs to 2D image for (x,y) check
+*/
 _CPU_AND_GPU_CODE_ inline bool ProjectSingleBlock(const THREADPTR(Vector3s) & blockPos, const THREADPTR(Matrix4f) & pose, const THREADPTR(Vector4f) & intrinsics, 
 	const THREADPTR(Vector2i) & imgSize, float voxelSize, THREADPTR(Vector2i) & upperLeft, THREADPTR(Vector2i) & lowerRight, THREADPTR(Vector2f) & zRange)
 {
@@ -90,6 +96,7 @@ _CPU_AND_GPU_CODE_ inline void CreateRenderingBlocks(DEVICEPTR(RenderingBlock) *
 }
 
 /**
+*  @pt_out : the zero-crossing position in (unit = numbrer of voxel)
  * @x : x-pos of the pixel in an image
  * @y : y-pos
  * @voxelData : local memory data
@@ -183,8 +190,9 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, int x, int y
 
 
 /**
- * @basePt : base point of the raycast, in world coordinate system (in meter)
- * @rayDirection : ray cast direction, define an unique ray with basePt (in meter)
+ * @pt_out : zero position (unit = number of voxel)
+ * @basePt : base point of the raycast, in world coordinate system (number of voxel)
+ * @rayDirection : ray cast direction, define an unique ray with basePt
  * @voxelData : local memory data
  * @oneOverVoxelSize = 1/0.005
  * @mu
@@ -245,7 +253,15 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, Vector3f bas
 	} else pt_found = false;
 
 	pt_out.x = pt_result.x; pt_out.y = pt_result.y; pt_out.z = pt_result.z;
-	if (pt_found) pt_out.w = 1.0f; else pt_out.w = 0.0f;
+	if (pt_found)
+	{
+		pt_out.w = 1.0f; else pt_out.w = 0.0f;
+		bool isFound;
+
+		//Color the corresponding voxel
+		TVoxel voxel = readVoxel(voxelData, voxelIndex, pt_out, isFound);
+		voxel.cstm = 1;
+	}
 
 	return pt_found;
 }
@@ -265,6 +281,11 @@ _CPU_AND_GPU_CODE_ inline int forwardProjectPixel(Vector4f pixel, const CONSTPTR
 	return (int)(pt_image.x + 0.5f) + (int)(pt_image.y + 0.5f) * imgSize.x;
 }
 
+/**
+ *	Find normal of a voxel, as well as the angle between the source lignt and the normal
+ * @foundPoint: indicating if the voxel is found
+ * @point: point coordinates in number of voxels
+*/
 template<class TVoxel, class TIndex>
 _CPU_AND_GPU_CODE_ inline void computeNormalAndAngle(THREADPTR(bool) & foundPoint, const THREADPTR(Vector3f) & point,
                                                      const CONSTPTR(TVoxel) *voxelBlockData, const CONSTPTR(typename TIndex::IndexData) *indexData,
@@ -373,14 +394,20 @@ _CPU_AND_GPU_CODE_ inline void drawPixelColour(DEVICEPTR(Vector4u) & dest, const
 
 template<class TVoxel, class TIndex>
 _CPU_AND_GPU_CODE_ inline void drawPixelCustom(DEVICEPTR(Vector4u) & dest, const CONSTPTR(Vector3f) & point,
-	const CONSTPTR(TVoxel) *voxelBlockData, const CONSTPTR(typename TIndex::IndexData) *indexData)
+	const CONSTPTR(TVoxel) *voxelBlockData, const CONSTPTR(typename TIndex::IndexData) *indexData, const THREADPTR(float) & angle)
 {
-	Vector4f clr = VoxelColorReader<TVoxel::hasColorInformation, TVoxel, TIndex>::interpolate(voxelBlockData, indexData, point);
-
-	dest.x = (uchar)(clr.x * 255.0f);
-	dest.y = (uchar)(clr.y * 255.0f);
-	dest.z = (uchar)(clr.z * 255.0f);
-	dest.w = 255;
+	uchar cstm = VoxelColorReader<TVoxel::hasColorInformation, TVoxel, TIndex>::getCustomValue(voxelBlockData, indexData, point);
+	if (cstm == 0)
+	{
+		drawPixelGrey(dest, angle);
+	}
+	else
+	{
+		dest.x = 255;
+		dest.y = 0;
+		dest.z = 0;
+		dest.w = 255;
+	}
 }
 
 template<class TVoxel, class TIndex>
@@ -522,9 +549,8 @@ _CPU_AND_GPU_CODE_ inline void processPixelCustom(DEVICEPTR(Vector4u) &outRender
 {
 	Vector3f outNormal;
 	float angle;
-
 	computeNormalAndAngle<TVoxel, TIndex>(foundPoint, point, voxelData, voxelIndex, lightSource, outNormal, angle);
 
-	if (foundPoint) drawPixelCustom<TVoxel, TIndex>(outRendering, point, voxelData, voxelIndex);
+	if (foundPoint) drawPixelCustom<TVoxel, TIndex>(outRendering, point, voxelData, voxelIndex, angle);
 	else outRendering = Vector4u((uchar)0);
 }

@@ -35,7 +35,14 @@ namespace ITMLib
 				: ITMVisualisationEngine<TVoxel, ITMVoxelBlockHash>(scene) { }
 			~ITMVisualisationEngine_CPU(void) { }
 
+			/**
+			* Find all visible block, given current camera pose and intrinsics
+			*/
 			void FindVisibleBlocks(const ITMPose *pose, const ITMIntrinsics *intrinsics, ITMRenderState *renderState) const;
+
+			/**
+			* Create the ITMRenderState::renderingRangeImage, use the bounding box of a block to remove blocks which are not in the camera's field of view
+			*/
 			void CreateExpectedDepths(const ITMPose *pose, const ITMIntrinsics *intrinsics, ITMRenderState *renderState) const;
 			void RenderImage(const ITMPose *pose, const ITMIntrinsics *intrinsics, const ITMRenderState *renderState, 
 				ITMUChar4Image *outputImage, IITMVisualisationEngine::RenderImageType type = IITMVisualisationEngine::RENDER_SHADED_GREYSCALE) const;

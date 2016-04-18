@@ -49,7 +49,7 @@ typedef class ORUtils::Vector6<float> Vector6f;
 #endif
 
 #ifndef TO_INT_FLOOR3
-#define TO_INT_FLOOR3(inted, coeffs, in) inted = (in).toIntFloor(coeffs)
+#define TO_INT_FLOOR3(inted, coeffs, in) inted = (in).toIntFloor(coeffs) //Returns the voxel coordinate in (inted), and coef
 #endif
 
 #ifndef TO_SHORT_FLOOR3

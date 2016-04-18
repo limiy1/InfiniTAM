@@ -11,17 +11,9 @@ macro(CANONIFY_BOOL var)
   endif()
 endmacro()
 
-#to debug
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CMAKE_CXX_FLAGS_DEBUG} -O0 -Wall -g -ggdb")
-SET(CMAKE_C_FLAGS_DEBUG "$ENV{CMAKE_CXX_FLAGS_DEBUG} -O0 -Wall -g -ggdb")
-set(CMAKE_C_FLAGS "$ENV{MAKE_CXX_FLAGS} -O3 -Wall")
-set(CMAKE_CXX_FLAGS "$ENV{MAKE_CXX_FLAGS} -O3 -Wall")
-message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
-set(EXECUTABLE_OUTPUT_PATH bin/${CMAKE_BUILD_TYPE})
-
 #Define Glut directory
-#set(GLUT_INCLUDE_DIR "C:/Program Files/freeglut/include")
-#set(GLUT_glut_LIBRARY "C:/Program Files/freeglut/lib/freeglutd.lib")
+set(GLUT_INCLUDE_DIR "C:/Program Files/freeglut/include")
+set(GLUT_glut_LIBRARY "C:/Program Files/freeglut/lib/freeglutd.lib")
 find_package(GLUT REQUIRED)
 message("GLUT_INCLUDE_DIR - ${GLUT_INCLUDE_DIR}")
 message("GLUT_LIBRARIES - ${GLUT_LIBRARIES}")
@@ -42,7 +34,7 @@ message(STATUS "libuvc found: ${libuvc_FOUND}")
 
 #set(RealSense_INCLUDE_DIR "C:/installpack/librealsense-master/include")
 #set(RealSense_LIBRARY "C:/installpack/librealsense-master/bin/x64")
-#set(REALSENSE_ROOT "C:/installpack/librealsense-master")
+set(REALSENSE_ROOT "C:/installpack/librealsense-master")
 find_package(RealSense QUIET)
 CANONIFY_BOOL(REALSENSE_FOUND)
 message(STATUS "librealsense found: ${REALSENSE_FOUND}")
