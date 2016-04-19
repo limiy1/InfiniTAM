@@ -24,9 +24,6 @@ namespace ITMLib
 			void CreateICPMaps(const ITMView *view, ITMTrackingState *trackingState, ITMRenderState *renderState) const;
 			void ForwardRender(const ITMView *view, ITMTrackingState *trackingState, ITMRenderState *renderState) const;
 
-			//No longer useful
-			void FindLocalPatch(Vector3f centerPt, Vector3f rayDirection, float radius, float incrementalTheta, float depth, const ITMRenderState *renderState) const;
-
 			ITMRenderState* CreateRenderState(const Vector2i & imgSize) const;
 		};
 
@@ -53,9 +50,6 @@ namespace ITMLib
 			void CreatePointCloud(const ITMView *view, ITMTrackingState *trackingState, ITMRenderState *renderState, bool skipPoints) const;
 			void CreateICPMaps(const ITMView *view, ITMTrackingState *trackingState, ITMRenderState *renderState) const;
 			void ForwardRender(const ITMView *view, ITMTrackingState *trackingState, ITMRenderState *renderState) const;
-
-			//No longer useful
-			void FindLocalPatch(Vector3f centerPt, Vector3f rayDirection, float radius, float incrementalTheta, float depth, const ITMRenderState *renderState) const;
 
 			ITMRenderState_VH* CreateRenderState(const Vector2i & imgSize) const;
 		};

@@ -23,14 +23,17 @@ namespace ITMLib
 		class LIMUPrimitiveFitter
 		{
 		private:
-			const IITMVisualisationEngine *visualisationEngine;
+			ITMScene<ITMVoxel, ITMVoxelIndex> *scene;
+
+			void FindRingPatch(Vector3f centerPt, Vector3f rayDirection, float radius, float incrementalTheta, float depth, const ITMRenderState *renderState);
+
 		public:
 			/// Process a single seed fit
 			void ProcessOneSeed(int x, int y, ITMScene<TVoxel, TIndex> *scene, ITMRenderState *renderState);
 
 			/** \brief Constructor
 			*/
-			explicit LIMUPrimitiveFitter(const ITMLibSettings *settings, const IITMVisualisationEngine *visualisationEngine);
+			explicit LIMUPrimitiveFitter(const ITMLibSettings *settings, ITMScene<TVoxel,TIndex> *scene);
 			~LIMUPrimitiveFitter();
 		};
 	}

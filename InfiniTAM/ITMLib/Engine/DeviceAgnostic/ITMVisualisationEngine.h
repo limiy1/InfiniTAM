@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../../Utils/ITMLibDefines.h"
+#include "ITMRepresentationAccess.h"
 
 struct RenderingBlock {
 	Vector2s upperLeft;
@@ -197,9 +198,11 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, int x, int y
  * @oneOverVoxelSize = 1/0.005
  * @mu
  * @depth: the depth along the ray to test (in meter)
+ *
+ * TODO : make voxelData const
  */
 template<class TVoxel, class TIndex>
-_CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, Vector3f basePt, Vector3f rayDirection, const CONSTPTR(TVoxel) *voxelData,
+_CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, Vector3f basePt, Vector3f rayDirection, TVoxel *voxelData,
 	const CONSTPTR(typename TIndex::IndexData) *voxelIndex, float oneOverVoxelSize,	float mu, float depth)
 {
 	Vector3f pt_block_s, pt_block_e, pt_result;
@@ -259,9 +262,14 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, Vector3f bas
 		bool isFound;
 
 		//Color the corresponding voxel
-		//wrong here, the voxel data is read only here
-		TVoxel &voxel = readVoxel(voxelData, voxelIndex, pt_out, isFound);
-		voxel.cstm = 1;
+		//For debug use
+		Vector3i pt3Di(pt_out.x , pt_out.y, pt_out.z);
+		int voxelAdress = findVoxel(voxelIndex, pt3Di, isFound);
+		if (isFound)
+		{
+			voxelData[voxelAdress].cstm = 1;
+			std::cout<<"Color voxel at "<<basePt<<" ["<<pt3Di<<"]"<<std::endl;
+		}
 	}
 	else
 	{
