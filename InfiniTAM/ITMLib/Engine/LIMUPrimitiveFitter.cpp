@@ -39,6 +39,9 @@ static void GenericCylinderCast(ITMScene<TVoxel,TIndex> *scene,  Vector3f center
 	#pragma omp parallel for
 #endif
 
+	std::cout << "cylinder center = " << centerPt << std::endl;
+	std::cout << "radius in unit = " << radius*oneOverVoxelSize << std::endl;
+
 	if ( ( fabs(rayDirection.x) < 1e-2 ) && ( fabs(rayDirection.x) < 1e-2 ) )   //rayDirection is the z-direction
 	{
 		std::cout<<"ray is nearly parallel to z"<<std::endl;
@@ -82,10 +85,10 @@ static void GenericCylinderCast(ITMScene<TVoxel,TIndex> *scene,  Vector3f center
 			Vector3f raidusVector(rayDirection.y*cos(theta) + wu*sin(theta),
 								-rayDirection.x*cos(theta) + wv*sin(theta),
 								-u2v2*sin(theta));
-			float radius_coef = radius / sqrt(raidusVector.x * raidusVector.x + raidusVector.y * raidusVector.y + raidusVector.z * raidusVector.z);
+			float radius_coef = radius * oneOverVoxelSize / sqrt(raidusVector.x * raidusVector.x + raidusVector.y * raidusVector.y + raidusVector.z * raidusVector.z);
 			Vector3f rayCenter = radius_coef*raidusVector + centerPt;
 
-			std::cout<<"radius center = "<<raidusVector<<std::endl;
+			std::cout << "ray center = " << rayCenter << std::endl;
 			castRay<TVoxel, TIndex>(
 				pointsRay,
 				rayCenter,
@@ -125,7 +128,7 @@ void LIMUPrimitiveFitter<TVoxel, TIndex>::ProcessOneSeed(int x, int y, ITMScene<
 	//Get the normal and position of the target point
 	Vector2i imgSize = renderState->raycastResult->noDims;
 	Vector4f *pointsRay = renderState->raycastResult->GetData(MEMORYDEVICE_CPU);
-	Vector4f seedPos3D = pointsRay[imgSize.x*imgSize.y / 2];  //get the center point
+	Vector4f seedPos3D = pointsRay[x + y * imgSize.x];  //get the specified point
 
 	//Get the normal from the voxel
 	Vector3f point(seedPos3D.x / seedPos3D.w, seedPos3D.y / seedPos3D.w, seedPos3D.z / seedPos3D.w);
@@ -137,7 +140,7 @@ void LIMUPrimitiveFitter<TVoxel, TIndex>::ProcessOneSeed(int x, int y, ITMScene<
 	std::cout << "The normal is " << normal << std::endl;
 
 	//Cast the cylinder, need the visualization engine
-	FindRingPatch(point, normal, 0.02, 10, 0.1, renderState);
+	FindRingPatch(point, normal, 0.05, 10, 0.1, renderState);
 
 }
 

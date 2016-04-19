@@ -203,8 +203,8 @@ void ITMMainEngine::GetImage(ITMUChar4Image *out, GetImageType getImageType, ITM
 void ITMMainEngine::projectCyliner()
 {
 	Vector2i imgSize = this->renderState_live->raycastResult->noDims;
-	int x = imgSize.x / 2;
-	int y = imgSize.y / 2;
+	int x = imgSize.x*0.5;
+	int y = imgSize.y*0.75;
 
 	primitiveFitter->ProcessOneSeed(x, y, this->scene, this->renderState_live);
 }

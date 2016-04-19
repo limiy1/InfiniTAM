@@ -198,7 +198,7 @@ _CPU_AND_GPU_CODE_ inline float readFromSDF_float_interpolated(const CONSTPTR(TV
 }
 
 /**
- * return the voxel block color data: interpolated between the 8 voxels
+ * return the voxel color data: interpolated between the 8 voxels
  * @point : unit is the same as in "renderState->raycastResult"
  */
 template<class TVoxel, class TIndex>
@@ -236,6 +236,24 @@ _CPU_AND_GPU_CODE_ inline Vector4f readFromSDF_color4u_interpolated(const CONSTP
 	ret4.x = ret.x; ret4.y = ret.y; ret4.z = ret.z; ret4.w = 255.0f;
 
 	return ret4 / 255.0f;
+}
+
+/**
+* return the voxel custom data: searching in nearby 8 voxels (sum)
+* @point : unit is the same as in "renderState->raycastResult" (unit of voxel)
+*/
+template<class TVoxel, class TIndex>
+_CPU_AND_GPU_CODE_ inline uchar readFromSDF_custom(const CONSTPTR(TVoxel) *voxelData,
+	const CONSTPTR(typename TIndex::IndexData) *voxelIndex, const THREADPTR(Vector3f) & point,
+	THREADPTR(typename TIndex::IndexCache) & cache)
+{
+	TVoxel resn; uchar ret = 0; bool isFound;
+	Vector3f coeff; Vector3i pos; TO_INT_FLOOR3(pos, coeff, point);
+
+	resn = readVoxel(voxelData, voxelIndex, pos + Vector3i(0, 0, 0), isFound, cache);
+	ret += resn.cstm;
+
+	return ret;
 }
 
 /**
@@ -401,12 +419,6 @@ struct VoxelColorReader<true,TVoxel,TIndex> {
 		const THREADPTR(Vector3f) & point)
 	{
 		typename TIndex::IndexCache cache;
-		Vector3f coeff; Vector3i pos; TO_INT_FLOOR3(pos, coeff, point);
-		bool isFound;
-
-		//Read the pixel
-		TVoxel resn = readVoxel(voxelData, voxelIndex, pos, isFound, cache);
-
-		return (resn.cstm);
+		return (readFromSDF_custom<TVoxel, TIndex>(voxelData, voxelIndex, point, cache));
 	}
 };

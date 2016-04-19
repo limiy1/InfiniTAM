@@ -211,18 +211,23 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, Vector3f bas
 	float totalLength, stepLength, totalLengthMax, stepScale;
 
 	stepScale = mu * oneOverVoxelSize;    //mu is in mm, voxelSize is in mm, giving stepScale in number of unit of voxel
+	depth = depth * oneOverVoxelSize;     //convert the depth in number of voxel
 
-	//Find the source of pixel (x,y) on -depth and +depth
+	//Find the source of pixel (x,y) between -depth and +depth
+	//Since the  rayDirection is the normal of the surface, so find in the direction of (-rayDirection)
+	//Important: the rayCast algorithm works only from positive to negative
+	rayDirection = -rayDirection;  //revert the rayDirection
 	totalLength = 0;
-	pt_block_s = (basePt - depth * rayDirection) * oneOverVoxelSize;
+	pt_block_s = basePt - depth * rayDirection;
 
 	totalLengthMax = 2*depth;
-	pt_block_e = (basePt + depth * rayDirection) * oneOverVoxelSize;
+	pt_block_e = basePt + depth * rayDirection;
 
 	pt_result = pt_block_s;
 
 	typename TIndex::IndexCache cache;
 
+	std::cout << pt_block_s << " -> " << pt_block_e << " with totalLengthMax = "<<totalLengthMax << std::endl;
 	/**
 	 * Start the rayCasting, find the intersection of the surface:
 	 * Algorithm is shown in Fig.8 in article
@@ -263,7 +268,7 @@ _CPU_AND_GPU_CODE_ inline bool castRay(DEVICEPTR(Vector4f) &pt_out, Vector3f bas
 
 		//Color the corresponding voxel
 		//For debug use
-		Vector3i pt3Di(pt_out.x , pt_out.y, pt_out.z);
+		Vector3i pt3Di((int)floor(pt_out.x), (int)floor(pt_out.y), (int)floor(pt_out.z));
 		int voxelAdress = findVoxel(voxelIndex, pt3Di, isFound);
 		if (isFound)
 		{
@@ -419,7 +424,7 @@ _CPU_AND_GPU_CODE_ inline void drawPixelCustom(DEVICEPTR(Vector4u) & dest, const
 		dest.x = 255;
 		dest.y = 0;
 		dest.z = 0;
-		dest.w = 255;
+		dest.w = 120;
 	}
 }
 

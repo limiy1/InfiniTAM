@@ -231,6 +231,7 @@ static void RenderImage_common(const ITMScene<TVoxel,TIndex> *scene, const ITMPo
 #ifdef WITH_OPENMP
 #pragma omp parallel for
 #endif
+		std::cout << "Process custom rendering ... " << std::endl;
 		for (int locId = 0; locId < imgSize.x * imgSize.y; locId++)
 		{
 			Vector4f ptRay = pointsRay[locId];
